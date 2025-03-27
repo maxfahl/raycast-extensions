@@ -1,22 +1,13 @@
 import { LocalStorage } from "@raycast/api";
-import { Board, Me, User } from "./models";
+import { Me } from "./models";
 
-const BoardsCacheKey = "boards";
 const UserCacheKey = "user";
-const TeamCacheKey = "team";
 
 export async function resetAllCaches(): Promise<void> {
   return await LocalStorage.clear();
 }
 
-// Boards
-export async function getCachedBoards(): Promise<Board[] | undefined> {
-  return await retrieve<Board[]>(BoardsCacheKey);
-}
-
-export async function cacheBoards(boards: Board[]): Promise<void> {
-  return await store(BoardsCacheKey, boards);
-}
+// Boards -> now uses useCachedPromise (remove comment in future update)
 
 // User
 export async function getCachedUser(): Promise<Me | undefined> {
@@ -27,14 +18,7 @@ export async function cacheUser(user: Me): Promise<void> {
   return await store(UserCacheKey, user);
 }
 
-// Team
-export async function getCachedTeam(): Promise<User[] | undefined> {
-  return await retrieve<User[]>(TeamCacheKey);
-}
-
-export async function cacheTeam(users: User[]): Promise<void> {
-  return await store(TeamCacheKey, users);
-}
+// Team -> now uses useCachedPromise (remove comment in future update)
 
 // Helpers
 async function store<T>(key: string, object: T): Promise<void> {

@@ -1,18 +1,21 @@
 import fse, { existsSync, PathLike } from "fs-extra";
 import { FileInfo } from "../types/types";
 import { tmpdir } from "os";
-import { APP_EXT, DMG_EXT, imgExt, NO_PREVIEW_EXTENSIONS, ZIP_EXT } from "./constants";
+import { APP_EXT, DMG_EXT, IMAGE_PREVIEW_HEIGHT, imgExt, NO_PREVIEW_EXTENSIONS, ZIP_EXT } from "./constants";
 import { parse } from "path";
 import { exec } from "child_process";
 import * as util from "util";
 import fileUrl from "file-url";
 import { formatBytes, isEmpty } from "./common-utils";
 import { environment } from "@raycast/api";
+import { fileContentInfoInit } from "../types/file-content-info";
+import * as os from "node:os";
 
 const assetPath = environment.assetsPath;
 
 //Detail content: Image
-export const getFileContent = async (fileInfo: FileInfo) => {
+export const getFileContent = async (fileInfo: FileInfo | undefined) => {
+  if (!fileInfo) return fileContentInfoInit;
   let fileContent = "";
   let preview = "";
   let sizeTitle = "Size";
@@ -27,7 +30,7 @@ export const getFileContent = async (fileInfo: FileInfo) => {
       if (parsePath.ext === APP_EXT) {
         preview = `<img src="${fileUrl(environment.assetsPath + "/AppIcon.icns")}" alt="${
           fileInfo.name
-        }" height="156" />`;
+        }" height="${IMAGE_PREVIEW_HEIGHT}" />`;
         const files = fse.readdirSync(fileInfo.path);
         const isNormalFile = files.filter((value) => !value.startsWith("."));
         sizeTitle = "Sub-files";
@@ -35,28 +38,34 @@ export const getFileContent = async (fileInfo: FileInfo) => {
       } else if (fileStat.isDirectory()) {
         const files = fse.readdirSync(fileInfo.path);
         const isNormalFile = files.filter((value) => !value.startsWith("."));
-        preview = `<img src="${fileUrl(assetPath + "/folder-icon.png")}" alt="${fileInfo.name}" height="156" />`;
+        preview = `<img src="${fileUrl(assetPath + "/folder-icon.png")}" alt="${
+          fileInfo.name
+        }" height="${IMAGE_PREVIEW_HEIGHT}" />`;
         sizeTitle = "Sub-files";
         size = isNormalFile.length + "";
       } else {
         if (imgExt.includes(parsePath.ext)) {
-          preview = `<img src="${fileUrl(fileInfo.path)}" alt="${fileInfo.name}" height="156" />`;
+          preview = `<img src="${fileUrl(fileInfo.path)}" alt="${fileInfo.name}" height="${IMAGE_PREVIEW_HEIGHT}" />`;
         } else if (ZIP_EXT.includes(parsePath.ext)) {
           preview = `<img src="${fileUrl(environment.assetsPath + "/ArchiveUtility.icns")}" alt="${
             fileInfo.name
-          }" height="156" />`;
+          }" height="${IMAGE_PREVIEW_HEIGHT}" />`;
         } else if (parsePath.ext === DMG_EXT) {
           preview = `<img src="${fileUrl(environment.assetsPath + "/DmgIcon.icns")}" alt="${
             fileInfo.name
-          }" height="156" />`;
+          }" height="${IMAGE_PREVIEW_HEIGHT}" />`;
         } else if (NO_PREVIEW_EXTENSIONS.includes(parsePath.ext)) {
-          preview = `<img src="${fileUrl(assetPath + "/" + "file-icon.png")}" alt="${fileInfo.name}" height="156" />`;
+          preview = `<img src="${fileUrl(assetPath + "/" + "file-icon.png")}" alt="${
+            fileInfo.name
+          }" height="${IMAGE_PREVIEW_HEIGHT}" />`;
         } else {
           const previewPath = await fileMetadataMarkdown(fileInfo);
           if (isEmpty(previewPath)) {
-            preview = `<img src="${fileUrl(assetPath + "/" + "file-icon.png")}" alt="${fileInfo.name}" height="156" />`;
+            preview = `<img src="${fileUrl(assetPath + "/" + "file-icon.png")}" alt="${
+              fileInfo.name
+            }" height="${IMAGE_PREVIEW_HEIGHT}" />`;
           } else {
-            preview = `<img src="${previewPath}" alt="${fileInfo.name}" height="156" />`;
+            preview = `<img src="${previewPath}" alt="${fileInfo.name}" height="${IMAGE_PREVIEW_HEIGHT}" />`;
           }
         }
         size = formatBytes(fileStat.size);
@@ -73,7 +82,7 @@ export const getFileContent = async (fileInfo: FileInfo) => {
   return {
     fileContent: fileContent,
     name: parsePath.base,
-    where: parsePath.dir,
+    where: parsePath.dir.replace(os.homedir(), "~"),
     sizeTitle: sizeTitle,
     size: size,
     created: created,

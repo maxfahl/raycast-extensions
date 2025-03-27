@@ -2,7 +2,7 @@
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "sourcegraph",
   "title": "Sourcegraph",
-  "description": "Search your code and 2M+ public repositories on Sourcegraph.",
+  "description": "Search your code and public repositories with Sourcegraph.",
   "icon": "command-icon.png",
   "author": "bobheadxi",
   "license": "MIT",
@@ -16,36 +16,52 @@
     "sourcegraph",
     "search",
     "code",
-    "codesearch"
+    "codesearch",
+    "code search"
   ],
   "preferences": [
     {
       "name": "cloudToken",
-      "title": "Sourcegraph Cloud: Access token",
-      "description": "Available under 'Profile' -> 'Access token' on Sourcegraph Cloud",
+      "title": "Public code on Sourcegraph.com: Access token",
+      "description": "Configures 'Sourcegraph.com' commands - available under 'Profile' -> 'Access token' on Sourcegraph.com",
       "required": false,
       "type": "password"
     },
     {
       "name": "customInstance",
-      "title": "Sourcegraph Self-Hosted: Instance URL",
-      "description": "Required to use the Sourcegraph Self-Hosted commands - URL of the Sourcegraph instance you want to connect to",
-      "placeholder": "https://sourcegraph.my-company.com",
+      "title": "Sourcegraph connection: URL",
+      "description": "Required to use 'Sourcegraph' commands - Sourcegraph URL you want to connect to.",
+      "placeholder": "https://example.sourcegraph.app",
       "required": false,
       "type": "textfield"
     },
     {
       "name": "customInstanceToken",
-      "title": "Sourcegraph Self-Hosted: Access token",
-      "description": "Required to use the Sourcegraph Self-Hosted commands - available under 'Profile' -> 'Access token' on the Sourcegraph instance",
+      "title": "Sourcegraph connection: Access token",
+      "description": "Required to use 'Sourcegraph' commands - available under 'Profile' -> 'Access token' in Sourcegraph.",
       "required": false,
       "type": "password"
     },
     {
+      "name": "customInstanceProxy",
+      "title": "Sourcegraph connection: Proxy",
+      "description": "Optional proxy to use when using a custom Sourcegraph connection - presently, only Unix domain sockets are supported.",
+      "required": false,
+      "type": "textfield"
+    },
+    {
       "name": "featureSearchPatternDropdown",
-      "title": "Experimental features",
+      "title": "Additional features",
       "label": "Search pattern dropdown",
-      "description": "Enable the search pattern dropdown in the search command.",
+      "description": "Toggle the search pattern dropdown in the search command.",
+      "required": false,
+      "type": "checkbox",
+      "default": true
+    },
+    {
+      "name": "featureDisableTelemetry",
+      "label": "Disable telemetry",
+      "description": "Telemetry is only reported to the connected Sourcegraph instance or workspace, but can be disabled with this toggle.",
       "required": false,
       "type": "checkbox",
       "default": false
@@ -53,17 +69,18 @@
   ],
   "commands": [
     {
-      "name": "searchCloud",
-      "title": "Search Code",
-      "subtitle": "Sourcegraph Cloud",
-      "description": "Search your code and 2M+ public repositories.",
+      "name": "searchDotCom",
+      "title": "Search Public Code",
+      "subtitle": "Sourcegraph",
+      "icon": "logo-bw.png",
+      "description": "Search public repositories on Sourcegraph.com",
       "mode": "view",
       "keywords": [
         "sourcegraph",
         "search",
         "code",
-        "src",
-        "cloud"
+        "code search",
+        "src"
       ],
       "preferences": [
         {
@@ -77,18 +94,17 @@
       ]
     },
     {
-      "name": "searchSelfHosted",
-      "icon": "logo-bw.png",
+      "name": "searchInstance",
       "title": "Search Code",
-      "subtitle": "Sourcegraph Self-Hosted",
-      "description": "Search code on a self-hosted Sourcegraph instance.",
+      "subtitle": "Sourcegraph",
+      "description": "Search code on a Sourcegraph instance or workspace.",
       "mode": "view",
       "keywords": [
         "sourcegraph",
         "search",
         "code",
-        "src",
-        "selfhosted"
+        "code search",
+        "src"
       ],
       "preferences": [
         {
@@ -102,73 +118,99 @@
       ]
     },
     {
-      "name": "findNotebooksCloud",
+      "name": "searchHistoryDotCom",
+      "title": "Search Public Code History",
+      "subtitle": "Sourcegraph",
+      "icon": "logo-bw.png",
+      "description": "Browse and launch recent code searches.",
+      "mode": "view",
+      "keywords": [
+        "sourcegraph",
+        "search",
+        "code",
+        "search code",
+        "history",
+        "recent"
+      ]
+    },
+    {
+      "name": "searchHistoryInstance",
+      "title": "Code Search History",
+      "subtitle": "Sourcegraph",
+      "description": "Browse and launch recent code searches.",
+      "mode": "view",
+      "keywords": [
+        "sourcegraph",
+        "search",
+        "code",
+        "search code",
+        "history",
+        "recent"
+      ]
+    },
+    {
+      "name": "findNotebooksInstance",
       "title": "Find Search Notebooks",
-      "subtitle": "Sourcegraph Cloud",
-      "description": "Browse search notebooks on Sourcegraph Cloud.",
+      "subtitle": "Sourcegraph",
+      "description": "Browse search notebooks in Sourcegraph.",
       "mode": "view",
       "keywords": [
         "sourcegraph",
         "search",
         "notebook",
-        "snb",
-        "cloud"
+        "snb"
       ],
+      "disabledByDefault": true,
       "preferences": []
     },
     {
-      "name": "findNotebooksSelfHosted",
-      "icon": "logo-bw.png",
-      "title": "Find Search Notebooks",
-      "subtitle": "Sourcegraph Self-Hosted",
-      "description": "Browse search notebooks on a self-hosted Sourcegraph instance.",
-      "mode": "view",
-      "keywords": [
-        "sourcegraph",
-        "search",
-        "notebook",
-        "snb",
-        "selfhosted"
-      ],
-      "preferences": []
-    },
-    {
-      "name": "manageBatchChangesSelfHosted",
-      "icon": "logo-bw.png",
+      "name": "manageBatchChangesInstance",
       "title": "Manage Batch Changes",
-      "subtitle": "Sourcegraph Self-Hosted",
-      "description": "Manage batch changes on a self-hosted Sourcegraph instance.",
+      "subtitle": "Sourcegraph",
+      "description": "Manage batch changes in Sourcegraph.",
       "mode": "view",
       "keywords": [
         "sourcegraph",
         "batch",
         "changes",
-        "bc",
-        "selfhosted"
+        "bc"
       ],
+      "disabledByDefault": true,
       "preferences": []
     }
   ],
   "dependencies": {
-    "@apollo/client": "^3.5.10",
-    "@raycast/api": "^1.33.2",
-    "cross-fetch": "^3.1.5",
-    "eventsource": "^2.0.0",
-    "luxon": "^2.3.2",
-    "nanoid": "^3.3.3"
+    "@apollo/client": "^3.11.10",
+    "@raycast/api": "^1.86.1",
+    "@raycast/utils": "^1.18.1",
+    "@sourcegraph/telemetry": "^0.18.0",
+    "@types/uuid": "^10.0.0",
+    "cross-fetch": "^4.0.0",
+    "eventsource": "^2.0.2",
+    "graphql": "^16.9.0",
+    "luxon": "^3.5.0",
+    "nanoid": "^5.0.9",
+    "node-fetch": "^3.3.2",
+    "uuid": "^11.0.3"
   },
   "devDependencies": {
-    "@types/eventsource": "^1.1.8",
-    "@types/luxon": "^2.3.1",
-    "@types/node": "~16.10.0",
-    "@types/react": "^17.0.38",
-    "@typescript-eslint/eslint-plugin": "^5.0.0",
-    "@typescript-eslint/parser": "^5.0.0",
-    "apollo-codegen": "^0.20.2",
-    "eslint": "^8.12.0",
-    "eslint-config-prettier": "^8.5.0",
-    "prettier": "^2.6.1",
-    "typescript": "^4.5.4"
+    "@graphql-codegen/cli": "^5.0.3",
+    "@graphql-codegen/fragment-matcher": "^5.0.2",
+    "@graphql-codegen/introspection": "^4.0.3",
+    "@graphql-codegen/typescript": "^4.1.2",
+    "@graphql-codegen/typescript-operations": "^4.4.0",
+    "@graphql-codegen/typescript-react-apollo": "^4.3.2",
+    "@types/eventsource": "^1.1.15",
+    "@types/luxon": "^3.4.2",
+    "@types/node": "~22.10.1",
+    "@types/react": "^18.3.12",
+    "@typescript-eslint/eslint-plugin": "^8.16.0",
+    "@typescript-eslint/parser": "^8.16.0",
+    "eslint": "^9.16.0",
+    "eslint-config-prettier": "^9.1.0",
+    "patch-package": "^8.0.0",
+    "prettier": "^3.4.1",
+    "typescript": "^5.7.2"
   },
   "scripts": {
     "build": "ray build -e dist",
@@ -176,8 +218,7 @@
     "lint": "ray lint",
     "fmt": "ray lint --fix",
     "raycast-publish": ".scripts/raycast-publish.sh",
-    "gql-schema": "apollo-codegen introspect-schema https://sourcegraph.com/.api/graphql --output src/sourcegraph/gql/schema.json",
-    "gql-gen": "apollo-codegen generate src/sourcegraph/gql/queries.ts src/sourcegraph/gql/mutations.ts --schema src/sourcegraph/gql/schema.json --target typescript --output src/sourcegraph/gql/schema.ts && npm run fmt",
-    "gql": "npm run gql-schema && npm run gql-gen"
+    "gql": "graphql-codegen --config graphql-codegen.yml && npm run fmt",
+    "postinstall": "patch-package"
   }
 }

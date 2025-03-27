@@ -8,3 +8,22 @@ export interface PicsumConfig {
   grayscale?: boolean; // Image grayscale or normal, (false)
   staticRandom?: boolean; // Image grayscale or normal, (false)
 }
+
+export interface PicsumImage {
+  id: string;
+  author: string;
+  width: number;
+  height: number;
+  url: string;
+  download_url: string;
+}
+
+export interface SpecifyIdImageConfig {
+  id: string;
+  width: string;
+  height: string;
+  blur: string;
+  jpg: boolean;
+  cache: boolean;
+  grayscale: boolean;
+}

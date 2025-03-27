@@ -4,7 +4,13 @@
   "title": "SF Symbols Search",
   "description": "Search and copy SF Symbols",
   "icon": "command-icon.png",
-  "author": "peteschaffner",
+  "author": "jffrykkn",
+  "contributors": [
+    "xilopaint"
+  ],
+  "pastContributors": [
+    "peteschaffner"
+  ],
   "license": "MIT",
   "commands": [
     {
@@ -19,42 +25,97 @@
       "name": "primaryAction",
       "type": "dropdown",
       "title": "Primary Action",
-      "description": "Choose to paste or copy the selected symbol by default",
+      "description": "Choose a primary action",
       "required": false,
       "data": [
         {
-          "title": "Paste to Active App",
-          "value": "paste"
+          "title": "Copy Symbol to Clipboard",
+          "value": "copySymbol"
         },
         {
-          "title": "Copy to Clipboard",
-          "value": "copy"
+          "title": "Paste Symbol to Active App",
+          "value": "pasteSymbol"
         },
         {
           "title": "Copy Name to Clipboard",
           "value": "copyName"
+        },
+        {
+          "title": "Paste Name to Active App",
+          "value": "pasteName"
         }
       ],
-      "default": "paste"
+      "default": "copySymbol"
+    },
+    {
+      "name": "gridColumns",
+      "type": "dropdown",
+      "title": "Grid Size",
+      "description": "Size of the grid items for displaying SF Symbols",
+      "required": false,
+      "data": [
+        {
+          "title": "Small",
+          "value": "8"
+        },
+        {
+          "title": "Medium",
+          "value": "5"
+        }
+      ],
+      "default": "8"
+    },
+    {
+      "name": "showName", 
+      "type": "checkbox", 
+      "title": "Show Symbol Names",
+      "label": "Show Name", 
+      "description": "Show SF Symbols name in grid view",
+      "required": false, 
+      "default": true
+    },
+    {
+      "name": "minimumVersionOS", 
+      "type": "dropdown",
+      "title": "Show Minimum OS Version (Show Name required)",
+      "description": "Show the minimum OS version that's required for an SF Symbol below its name",
+      "data": [
+        { "title": "iOS", "value": "iOS"},
+        { "title": "macOS", "value": "macOS"},
+        { "title": "watchOS", "value": "watchOS"},
+        { "title": "tvOS", "value": "tvOS"},
+        { "title": "visionOS", "value": "visionOS"},
+        { "title": "Disabled", "value": "disabled"}
+      ],
+      "required": false,
+      "default": "iOS"
+    },
+    {
+      "name": "showRecent", 
+      "type": "checkbox", 
+      "title": "Show Recent Symbols",
+      "label": "Show Recent", 
+      "description": "Show recently used SF Symbols",
+      "required": false, 
+      "default": true
     }
   ],
   "dependencies": {
-    "@raycast/api": "^1.26.3"
+    "@raycast/api": "^1.92.1"
   },
   "devDependencies": {
-    "@types/node": "~16.10.0",
-    "@types/react": "^17.0.28",
-    "@typescript-eslint/eslint-plugin": "^5.0.0",
-    "@typescript-eslint/parser": "^5.0.0",
-    "eslint": "^7.32.0",
-    "eslint-config-prettier": "^8.3.0",
-    "prettier": "2.5.1",
-    "react-devtools": "^4.19.2",
-    "typescript": "^4.4.3"
+    "@raycast/eslint-config": "^1.0.11",
+    "@types/node": "20.8.10",
+    "@types/react": "18.3.3",
+    "eslint": "^8.57.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.4.5"
   },
   "scripts": {
     "build": "ray build -e dist",
     "dev": "ray develop",
-    "lint": "ray lint"
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint",
+    "publish": "ray publish"
   }
 }

@@ -1,14 +1,15 @@
+import { Icon } from "@raycast/api";
+
 export enum LocalStorageKey {
-  LOCAL_PIN_DIRECTORY = "localPinDirectory",
+  LOCAL_PIN_DIRECTORY = "Local Pin",
 }
 
-export const tagDirectoryTypes = ["Image", "Folder", "File"];
-
-export enum SortBy {
-  Rank = "Rank",
-  NameUp = "Name+",
-  NameDown = "Name-",
-}
+export const DirectoryTagTypes = ["Image", "Folder", "File"];
+export const DirectoryTags = [
+  { title: "Image", icon: Icon.Image },
+  { title: "Folder", icon: Icon.Folder },
+  { title: "File", icon: Icon.Document },
+];
 
 export const imgExt = [
   ".cr2",
@@ -35,3 +36,5 @@ export const ZIP_EXT = [".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".xz", ".i
 export const NO_PREVIEW_EXTENSIONS = [".exe", ".DS_Store", ".gdoc", ".gsheet", ".gslides", ".ts", ".css"];
 export const DMG_EXT = ".dmg";
 export const APP_EXT = ".app";
+
+export const IMAGE_PREVIEW_HEIGHT = 190;

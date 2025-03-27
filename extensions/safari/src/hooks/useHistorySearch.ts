@@ -1,13 +1,14 @@
+import { useSQL } from "@raycast/utils";
 import _ from "lodash";
 import { homedir } from "os";
 import { resolve } from "path";
 import { HistoryItem } from "../types";
-import useSql from "./useSql";
+import { safariAppIdentifier } from "../utils";
 
-const HISTORY_DB = resolve(homedir(), "Library/Safari/History.db");
+export const HISTORY_DB = `${resolve(homedir(), `Library/${safariAppIdentifier.replace(/ /g, "")}/`)}/History.db`;
 const LIMIT = 100;
 
-const getHistoryQuery = (searchText?: string) => {
+export const getHistoryQuery = (searchText?: string) => {
   const whereClause = searchText
     ? _.chain(searchText)
         .split(" ")
@@ -30,7 +31,7 @@ const getHistoryQuery = (searchText?: string) => {
 
 const useHistorySearch = (searchText?: string) => {
   const query = getHistoryQuery(searchText);
-  return useSql<HistoryItem>(HISTORY_DB, query);
+  return useSQL<HistoryItem>(HISTORY_DB, query);
 };
 
 export default useHistorySearch;

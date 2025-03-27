@@ -1,6 +1,11 @@
-import { showHUD, Clipboard, open, showToast, Toast } from "@raycast/api";
+import { showHUD, Clipboard, open, showToast, Toast, getPreferenceValues } from "@raycast/api";
 import fetch from "node-fetch";
 import invariant from "tiny-invariant";
+
+interface Preferences {
+  ttl: string;
+  domain: string;
+}
 
 export default async function main() {
   const text = await Clipboard.readText();
@@ -40,6 +45,24 @@ export default async function main() {
   }
 }
 
+const getTTL = () => {
+  const preferences = getPreferenceValues<Preferences>();
+  const ttl = parseInt(preferences.ttl);
+  return ttl > 0 ? ttl : null;
+};
+
+const getEndpoint = () => {
+  const preferences = getPreferenceValues<Preferences>();
+  const domain = String(preferences.domain);
+  invariant(domain, "domain is undefined");
+
+  const endpoint = new URL(domain);
+  endpoint.pathname = "/api/create.json";
+  endpoint.searchParams.append("utm_source", "raycast");
+
+  return endpoint.toString();
+};
+
 async function createNewDocument(title: string, json: unknown): Promise<{ id: string; location: string }> {
   const options = {
     method: "POST",
@@ -50,10 +73,13 @@ async function createNewDocument(title: string, json: unknown): Promise<{ id: st
     body: JSON.stringify({
       title,
       content: json,
+      ttl: getTTL(),
     }),
   };
 
-  const response = await fetch(`https://jsonhero.io/api/create.json?utm_source=raycast`, options);
+  const endpoint = getEndpoint();
+
+  const response = await fetch(endpoint, options);
   const jsonResponse = await response.json();
 
   invariant(jsonResponse, "jsonResponse is undefined");

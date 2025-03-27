@@ -1,5 +1,6 @@
+import { getPreferenceValues, LocalStorage } from "@raycast/api";
 import { ApolloClient, NormalizedCacheObject } from "@apollo/client";
-import { getPreferenceValues } from "@raycast/api";
+import { v4 as uuidv4 } from "uuid";
 import { newApolloClient } from "./gql/apollo";
 
 export interface Sourcegraph {
@@ -12,7 +13,7 @@ export interface Sourcegraph {
    */
   token?: string;
   /**
-   * Default search context when searching on Sourcegraph Cloud
+   * Default search context when searching on this Sourcegraph instance.
    */
   defaultContext?: string;
   /**
@@ -21,79 +22,91 @@ export interface Sourcegraph {
   client: ApolloClient<NormalizedCacheObject>;
 
   /**
+   * Address of the proxy server to use for requests to the custom Sourcegraph instance.
+   */
+  proxy?: string;
+
+  /**
    * Feature flags for the extension.
    */
   featureFlags: ExtensionFeatureFlags;
+
+  /**
+   * Whether a custom Sourcegraph connection has been configured by the user.
+   */
+  hasCustomSourcegraphConnection: boolean;
 }
 
-const cloudURL = "https://sourcegraph.com";
+const dotComURL = "https://sourcegraph.com";
 
 /**
- * isSourcegraphCloud returns true if this instance URL points to Sourcegraph Cloud.
+ * isSourcegraphDotCom returns true if this instance URL points to Sourcegraph.com.
  */
-export function isSourcegraphCloud(instance: string) {
-  return instance === cloudURL;
+export function isSourcegraphDotCom(instance: string) {
+  return instance === dotComURL;
 }
 
 /**
  * instanceName generates a name for the given instance.
  */
 export function instanceName(src: Sourcegraph) {
-  return `${isSourcegraphCloud(src.instance) ? "Sourcegraph Cloud" : new URL(src.instance).hostname}`;
-}
-
-interface Preferences {
-  // Preferences for Sourcegraph Cloud
-
-  cloudToken?: string;
-  cloudDefaultContext?: string;
-
-  // Fields for self-hosted are internally named "customInstance" for back-compat with
-  // older configuration.
-
-  customInstance?: string;
-  customInstanceToken?: string;
-  customInstanceDefaultContext?: string;
-
-  // Feature flags
-
-  featureSearchPatternDropdown?: boolean;
+  if (isSourcegraphDotCom(src.instance)) {
+    return "Sourcegraph.com";
+  }
+  return new URL(src.instance).hostname || src.instance || null;
 }
 
 /**
- * sourcegraphCloud returns the user's configuration for connecting to Sourcegraph Cloud.
+ * sourcegraphDotCom returns the user's configuration for connecting to Sourcegraph.com.
  */
-export function sourcegraphCloud(): Sourcegraph {
-  const prefs: Preferences = getPreferenceValues();
+export async function sourcegraphDotCom(): Promise<Sourcegraph> {
+  const prefs = getPreferenceValues<Preferences>();
+  const searchPrefs = getPreferenceValues<Preferences.SearchDotCom>();
+
+  // If there is no token, generate a persisted anonymous identifier for the user.
+  let anonymousUserID = "";
+  if (!prefs.cloudToken) {
+    anonymousUserID = (await LocalStorage.getItem("anonymous-user-id")) as string;
+    if (!anonymousUserID) {
+      anonymousUserID = uuidv4();
+      await LocalStorage.setItem("anonymous-user-id", anonymousUserID);
+    }
+  }
+
   const connect = {
-    instance: cloudURL,
+    instance: dotComURL,
     token: prefs.cloudToken,
+    anonymousUserID,
   };
   return {
     ...connect,
-    defaultContext: prefs.cloudDefaultContext,
+    defaultContext: searchPrefs.cloudDefaultContext,
     client: newApolloClient(connect),
     featureFlags: newFeatureFlags(prefs),
+    hasCustomSourcegraphConnection: !!(prefs.customInstance && prefs.customInstanceToken),
   };
 }
 
 /**
- * sourcegraphSelfHosted returns the configured self-hosted Sourcegraph instance.
+ * sourcegraphInstance returns the configured Sourcegraph instance.
  */
-export function sourcegraphSelfHosted(): Sourcegraph | null {
-  const prefs: Preferences = getPreferenceValues();
+export function sourcegraphInstance(): Sourcegraph | null {
+  const prefs = getPreferenceValues<Preferences>();
   if (!prefs.customInstance) {
     return null;
   }
+  const searchPrefs = getPreferenceValues<Preferences.SearchInstance>();
   const connect = {
     instance: prefs.customInstance.replace(/\/$/, ""),
     token: prefs.customInstanceToken,
+    proxy: prefs.customInstanceProxy,
   };
   return {
     ...connect,
-    defaultContext: prefs.customInstanceDefaultContext,
+    defaultContext: searchPrefs.customInstanceDefaultContext,
     client: newApolloClient(connect),
     featureFlags: newFeatureFlags(prefs),
+    hasCustomSourcegraphConnection: true,
   };
 }
 
@@ -121,10 +134,12 @@ export class LinkBuilder {
 
 interface ExtensionFeatureFlags {
   searchPatternDropdown: boolean;
+  disableTelemetry: boolean;
 }
 
 function newFeatureFlags(prefs: Preferences): ExtensionFeatureFlags {
   return {
-    searchPatternDropdown: !!prefs.featureSearchPatternDropdown,
+    searchPatternDropdown: prefs.featureSearchPatternDropdown !== false, // default true
+    disableTelemetry: !!prefs.featureDisableTelemetry,
   };
 }

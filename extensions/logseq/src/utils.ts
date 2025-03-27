@@ -1,7 +1,7 @@
 import { getPreferenceValues, showToast, Toast } from "@raycast/api";
+import { getDateForPageWithoutBrackets } from "logseq-dateutils";
 import { parseEDNString } from "edn-data";
 import path from "path";
-import * as R from "ramda";
 import dayjs from "dayjs";
 import fs from "fs";
 import untildify from "untildify";
@@ -12,8 +12,20 @@ export const prependStr = (leading: string) => (val: string) => leading + val;
 export const appendStr = (toAppend: string) => (val: string) => val + toAppend;
 
 export const generateContentToAppend = (content: string, isOrgMode: boolean) => {
-  const leadingStr = isOrgMode ? "\n* " : "\n- ";
-  return R.compose(prependStr(leadingStr), R.replace(/\n/g, leadingStr))(content);
+  const newContent = content
+    .split("\n")
+    .map((line) => {
+      const leadingSpacesCount = line.match(/^( *)/)?.[0].length || 0;
+
+      if (isOrgMode) {
+        return `${"*".repeat(leadingSpacesCount + 1)} ${line.trimStart()}`;
+      } else {
+        return `${" ".repeat(leadingSpacesCount)}- ${line.trimStart()}`;
+      }
+    })
+    .join("\n");
+
+  return `\n${newContent}`;
 };
 
 const validateFolderPath = (folder: string) => {
@@ -33,7 +45,7 @@ const validateFolderPath = (folder: string) => {
     });
 };
 
-const getUserConfiguredGraphPath = () => {
+export const getUserConfiguredGraphPath = () => {
   return untildify(getPreferenceValues().graphPath);
 };
 
@@ -41,25 +53,39 @@ export const validateUserConfigGraphPath = () => {
   return validateFolderPath(getUserConfiguredGraphPath());
 };
 
-const parseJournalFileNameFromLogseqConfig = () => {
+const parseLogseqConfig = () => {
   const logseqConfigPath = path.join(getUserConfiguredGraphPath(), "/logseq/config.edn");
+  return fs.promises
+    .readFile(logseqConfigPath, { encoding: "utf8" })
+    .then((content) => parseEDNString(content.toString(), { mapAs: "object", keywordAs: "string" }));
+};
+
+export const getPreferredFormat = () => {
+  return parseLogseqConfig().then((v: any) => v["preferred-format"] || "md");
+};
+
+const parseJournalFileNameFromLogseqConfig = () => {
   return (
-    fs.promises
-      .readFile(logseqConfigPath, { encoding: "utf8" })
-      .then((content) => parseEDNString(content.toString(), { mapAs: "object", keywordAs: "string" }))
+    parseLogseqConfig()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then((v: any) => ({
         fileFormat: v["preferred-format"] === "org" ? ".org" : ".md",
         journalsDirectory: v["journals-directory"] || "journals",
-        dateFormat: (v["journal/file-name-format"] || "YYYY_MM_DD").toUpperCase(),
+        dateFormat: v["journal/file-name-format"] || "yyyy_MM_dd",
       }))
   );
 };
 
 const buildJournalPath = (graphPath: string) => {
   return parseJournalFileNameFromLogseqConfig().then(({ dateFormat, journalsDirectory, fileFormat }) =>
-    path.join(graphPath, journalsDirectory, `${dayjs().format(dateFormat)}${fileFormat}`)
+    path.join(graphPath, journalsDirectory, `${getDateForPageWithoutBrackets(new Date(), dateFormat)}${fileFormat}`)
   );
+};
+
+export const getWorkflowStyle = async (): Promise<string> => {
+  return await parseLogseqConfig()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .then((v: any) => v["preferred-workflow"]);
 };
 
 export const getTodayJournalPath = () => {
@@ -79,7 +105,8 @@ const createFileIfNotExist = (filePath: string) => {
 export const showGraphPathInvalidToast = () => {
   showToast({
     style: Toast.Style.Failure,
-    title: "Logseq graph path is invalid. Update it in Raycast Preferences and retry.",
+    title: "Logseq graph path is invalid",
+    message: "Update the path and try again.",
   });
 };
 
@@ -88,4 +115,38 @@ export const appendContentToFile = (content: string, filePath: string) => {
   return validateFolderPath(path.dirname(filePath))
     .then(() => createFileIfNotExist(filePath))
     .then(() => fs.promises.appendFile(filePath, generateContentToAppend(content, isOrgMode)));
+};
+
+export const getFilesInDir = async (dirPath: string) => {
+  return fs.promises.readdir(dirPath).then((files) => files.map((file) => path.join(dirPath, file)));
+};
+
+export const formatResult = (result: string) => {
+  const title = result.split("/");
+  return title[title.length - 1];
+};
+
+export const formatFilePath = (pageName: string) => {
+  const dbName = getUserConfiguredGraphPath().split("/")[getUserConfiguredGraphPath().split("/").length - 1];
+  const title = pageName.split("/")[pageName.split("/").length - 1];
+  const finalURL = encodeURI(`logseq://graph/${dbName}?page=${title}`);
+  return finalURL;
+};
+
+const getCurrentTime = () => {
+  return dayjs().format("HH:mm");
+};
+
+export const addLeadingTimeToContentIfNecessary = (content: string) => {
+  let result = content;
+
+  if (getPreferenceValues().addQuickCaptureTag) {
+    result = `[[quick capture]]: ` + result;
+  }
+
+  if (getPreferenceValues().insertTime) {
+    result = `**${getCurrentTime()}** ` + result;
+  }
+
+  return result;
 };

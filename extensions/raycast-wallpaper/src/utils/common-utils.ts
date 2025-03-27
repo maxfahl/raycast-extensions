@@ -1,101 +1,95 @@
-import { environment, getPreferenceValues, LocalStorage, showToast, Toast } from "@raycast/api";
-import fse, { existsSync } from "fs-extra";
-import { runAppleScript } from "run-applescript";
-import { RaycastWallpaper } from "./raycast-wallpaper-utils";
-import Values = LocalStorage.Values;
+import { Cache, environment, open, showInFinder, showToast, Toast } from "@raycast/api";
+import fse from "fs-extra";
 import { homedir } from "os";
+import { RaycastWallpaper } from "../types/types";
+import axios from "axios";
+import { picturesDirectory } from "../types/preferences";
 
-export const preferences = () => {
-  const preferencesMap = new Map(Object.entries(getPreferenceValues<Values>()));
-  return {
-    picturesDirectory: preferencesMap.get("picturesDirectory") as string,
-    applyTo: preferencesMap.get("applyTo") as string,
-  };
-};
+export const cache = new Cache();
 export const cachePath = environment.supportPath;
 
 export const isEmpty = (string: string | null | undefined) => {
   return !(string != null && String(string).length > 0);
 };
 
-export const getScreenshotsDirectory = () => {
-  const directoryPreference = preferences().picturesDirectory;
-  let actualDirectory = directoryPreference;
-  if (directoryPreference.startsWith("~")) {
-    actualDirectory = directoryPreference.replace("~", `${homedir()}`);
+export const getThumbnailUrl = (url: string) => {
+  // TODO: Hacky way to get the thumbnail URLs for the new wallpapers, replace them for optimized thumbnails
+  const fileName = url.split("wallpapers/")[1];
+  if (fileName.includes("_")) {
+    return url.replace(`.${getFileType(url)}`, "_preview.png");
   }
+
+  return url.replace(`.${getFileType(url)}`, "-thumbnail.webp");
+};
+
+export const getSavedDirectory = () => {
+  const actualDirectory = picturesDirectory;
   if (isEmpty(actualDirectory) || !fse.pathExistsSync(actualDirectory)) {
     return homedir() + "/Downloads";
   }
   return actualDirectory.endsWith("/") ? actualDirectory.substring(0, -1) : actualDirectory;
 };
 
-export const setWallpaper = async (wallpaper: RaycastWallpaper) => {
-  const toast = await showToast(Toast.Style.Animated, "Downloading and setting wallpaper...");
-
-  const { applyTo } = preferences();
-  const fixedPathName = buildCachePath(wallpaper);
-
-  try {
-    const actualPath = fixedPathName;
-
-    const command = !existsSync(actualPath)
-      ? `set cmd to "curl -o " & q_temp_folder & " " & "${wallpaper.url}"
-        do shell script cmd`
-      : "";
-
-    const result = await runAppleScript(`
-      set temp_folder to (POSIX path of "${actualPath}")
-      set q_temp_folder to quoted form of temp_folder
-
-      ${command}
-
-      set x to alias (POSIX file temp_folder)
-
-      try
-        tell application "System Events"
-          tell ${applyTo} desktop
-            set picture to (x as text)
-            return "ok"
-          end tell
-        end tell
-      on error
-        set dialogTitle to "Error Setting Wallpaper"
-        set dialogText to "Please make sure you have given Raycast the required permission. To make sure, click the button below and grant Raycast the 'System Events' permission."
-
-        display alert dialogTitle message dialogText buttons {"Cancel", "Open Preferences"} default button 2 as informational
-          if button returned of result is "Open Preferences" then
-            do shell script "open 'x-apple.systempreferences:com.apple.preference.security?Privacy_Automation'"
-          end if
-
-        return "error"
-      end try
-    `);
-
-    if (result !== "ok") throw new Error("Error setting wallpaper.");
-    else if (toast) {
-      toast.style = Toast.Style.Success;
-      toast.title = "Set wallpaper success!";
-    }
-  } catch (err) {
-    console.error(err);
-
-    if (toast) {
-      toast.style = Toast.Style.Failure;
-      toast.title = "Something went wrong.";
-      toast.message = "Try with another image or check your internet connection.";
-    }
-  }
+const getFileType = (url: string) => {
+  return url.split(".").pop() || "png";
 };
 
-export const buildCachePath = (wallpaper: RaycastWallpaper) => {
-  return cachePath.endsWith("/") ? `${cachePath}${wallpaper.title}.png` : `${cachePath}/${wallpaper.title}.png`;
+export const axiosGetImageArrayBuffer = async (url: string) => {
+  const res = await axios({
+    url: url,
+    method: "GET",
+    responseType: "arraybuffer",
+  });
+  return res.data;
+};
+
+export async function downloadPicture(wallpaper: { title: string; url: string }) {
+  await showToast(Toast.Style.Animated, "Downloading...");
+
+  const picturePath = `${getSavedDirectory()}/${wallpaper.title}.${getFileType(wallpaper.url)}`;
+  fse.writeFile(picturePath, Buffer.from(await axiosGetImageArrayBuffer(wallpaper.url)), async (error) => {
+    if (error != null) {
+      await showToast(Toast.Style.Failure, String(error));
+    } else {
+      const options: Toast.Options = {
+        style: Toast.Style.Success,
+        title: "Download picture success!",
+        message: `${picturePath.replace(`${homedir()}`, "~")}`,
+        primaryAction: {
+          title: "Open picture",
+          onAction: (toast) => {
+            open(picturePath);
+            toast.hide();
+          },
+        },
+        secondaryAction: {
+          title: "Show in finder",
+          onAction: (toast) => {
+            showInFinder(picturePath);
+            toast.hide();
+          },
+        },
+      };
+      await showToast(options);
+    }
+  });
+}
+
+export const buildCachePath = (raycastWallpaper: RaycastWallpaper) => {
+  const fileType = getFileType(raycastWallpaper.url);
+  const normalizedCachePath = cachePath.endsWith("/") ? cachePath : `${cachePath}/`;
+  return `${normalizedCachePath}${raycastWallpaper.title}.${fileType}`;
 };
 
 export const checkCache = (wallpaper: RaycastWallpaper) => {
-  const fixedPathName = buildCachePath(wallpaper);
-  return fse.pathExistsSync(fixedPathName);
+  const fixedPath = buildCachePath(wallpaper);
+  return fse.pathExistsSync(fixedPath);
 };
+
+export async function cachePicture(wallpaper: RaycastWallpaper) {
+  const picturePath = buildCachePath(wallpaper);
+  await fse.writeFile(picturePath, Buffer.from(await axiosGetImageArrayBuffer(wallpaper.url)));
+}
 
 export function deleteCache() {
   const pathName = environment.supportPath;

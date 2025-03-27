@@ -2,11 +2,12 @@ export interface Doc {
   name: string;
   slug: string;
   type: string;
-  links: Links;
+  links?: Links;
   version: string;
   release: string;
   mtime: number;
   db_size: number;
+  alias?: string;
 }
 
 export interface Links {
@@ -29,4 +30,8 @@ export interface Type {
   name: string;
   count: number;
   slug: string;
+}
+
+export interface Preferences {
+  primaryOpenInAction: string;
 }

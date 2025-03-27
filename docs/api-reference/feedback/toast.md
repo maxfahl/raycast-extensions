@@ -4,7 +4,11 @@ When an asynchronous operation is happening or when an error is thrown, it's usu
 
 Additionally, Toasts can have some actions associated to the action they are about. For example, you could provide a way to cancel an asynchronous operation, undo an action, or copy the stack trace of an error.
 
-![](../../.gitbook/assets/toast.png)
+{% hint style="info" %}
+The `showToast()` will fallback to [showHUD()](./hud.md#showhud) if the Raycast window is closed.
+{% endhint %}
+
+![](../../.gitbook/assets/toast.webp)
 
 ## API Reference
 
@@ -23,7 +27,7 @@ async function showToast(options: Toast.Options): Promise<Toast>;
 ```typescript
 import { showToast, Toast } from "@raycast/api";
 
-export default async () => {
+export default async function Command() {
   const success = false;
 
   if (success) {
@@ -35,7 +39,7 @@ export default async () => {
       message: "Pizza dropped on the floor",
     });
   }
-};
+}
 ```
 
 When showing an animated Toast, you can later on update it:
@@ -44,7 +48,7 @@ When showing an animated Toast, you can later on update it:
 import { showToast, Toast } from "@raycast/api";
 import { setTimeout } from "timers/promises";
 
-export default async () => {
+export default async function Command() {
   const toast = await showToast({
     style: Toast.Style.Animated,
     title: "Uploading image",
@@ -59,16 +63,16 @@ export default async () => {
   } catch (err) {
     toast.style = Toast.Style.Failure;
     toast.title = "Failed to upload image";
-    toast.message = err.message;
+    if (err instanceof Error) {
+      toast.message = err.message;
+    }
   }
-};
+}
 ```
 
 #### Parameters
 
-| Name    | Type                                         | Required | Description                           |
-| :------ | :------------------------------------------- | :------- | :------------------------------------ |
-| options | <code>[Toast.Options](#toast.options)</code> | Yes      | The options used to create the Toast. |
+<FunctionParametersTableFromJSDoc name="showToast" />
 
 #### Return
 
@@ -102,7 +106,7 @@ The options to create a [Toast](#toast).
 ```typescript
 import { showToast, Toast } from "@raycast/api";
 
-export default async () => {
+export default async function Command() {
   const options: Toast.Options = {
     style: Toast.Style.Success,
     title: "Finished cooking",
@@ -116,7 +120,7 @@ export default async () => {
     },
   };
   await showToast(options);
-};
+}
 ```
 
 #### Properties
@@ -133,11 +137,11 @@ You can hide it later by using [Toast.hide](#toast) or update the properties of 
 
 #### Enumeration members
 
-| Name     | Value                                         |
-| :------- | :-------------------------------------------- |
-| Animated | ![](../../.gitbook/assets/toast-animated.png) |
-| Success  | ![](../../.gitbook/assets/toast-success.png)  |
-| Failure  | ![](../../.gitbook/assets/toast-failure.png)  |
+| Name     | Value                                          |
+| :------- | :--------------------------------------------- |
+| Animated | ![](../../.gitbook/assets/toast-animated.webp) |
+| Success  | ![](../../.gitbook/assets/toast-success.webp)  |
+| Failure  | ![](../../.gitbook/assets/toast-failure.webp)  |
 
 ### Toast.ActionOptions
 
